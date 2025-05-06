@@ -1,4 +1,3 @@
-// okay so this grabs all the buttons with class "toggle-complete"
 var toggleBtns = document.getElementsByClassName("toggle-complete");
 var deleteBtns = document.getElementsByClassName("delete");
 
