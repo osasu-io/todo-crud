@@ -1,124 +1,114 @@
-const { ObjectId } = require('mongodb'); // ✅ Correct ObjectId import
-
 module.exports = function(app, passport, db) {
 
-  // Normal Routes ===============================================================
+// normal routes ===============================================================
 
-  // Home Page
-  app.get('/', function(req, res) {
-    res.render('index.ejs');
-  });
-
-  // Profile Page (only if logged in)
-  app.get('/profile', isLoggedIn, async function(req, res) {
-    try {
-      const todos = await db.collection('todos').find({ userId: req.user._id }).toArray();
-      res.render('profile.ejs', {
-        user: req.user,
-        todos: todos
-      });
-    } catch (err) {
-      console.log(err);
-      res.redirect('/');
-    }
-  });
-
-  // Logout
-  app.get('/logout', function(req, res) {
-    req.logout(function(err) {
-      if (err) { return next(err); }
-      res.redirect('/');
+    // show the home page
+    app.get('/', function(req, res) {
+        res.render('index.ejs');
     });
-  });
 
-  // CRUD Routes ===============================================================
+    // PROFILE SECTION =========================
+    app.get('/profile', isLoggedIn, function(req, res) {
+        // okay so this finds all todos in the collection and sends them to the profile.ejs file
+        db.collection('todos').find().toArray((err, result) => {
+            if (err) return console.log(err)
+            res.render('profile.ejs', {
+                user: req.user,
+                todos: result // we sending the todos here
+            })
+        })
+    });
 
-  // Create new to-do
-  app.post('/todos', isLoggedIn, async (req, res) => {
-    try {
-      await db.collection('todos').insertOne({
-        userId: req.user._id,
-        todo: req.body.todo,
-        done: false
-      });
-      console.log('Saved to database');
-      res.redirect('/profile');
-    } catch (err) {
-      console.error(err);
-      res.redirect('/profile');
-    }
-  });
+    // LOGOUT ==============================
+    app.get('/logout', function(req, res) {
+        req.logout(() => {
+            console.log('User has logged out!')
+        });
+        res.redirect('/');
+    });
 
-  // Mark as done
-  app.put('/todos', isLoggedIn, async (req, res) => {
-    try {
-      await db.collection('todos').findOneAndUpdate(
-        { _id: new ObjectId(req.body.id) },  // ✅ Use "new ObjectId"
-        { $set: { done: true } },
-        { returnDocument: 'after' }          // ✅ Modern Mongo option
-      );
-      res.json('Marked Done');
-    } catch (err) {
-      console.error(err);
-      res.status(500).send(err);
-    }
-  });
+// to-do CRUD routes ============================================================
 
-  // Delete To-Do
-  app.delete('/todos', isLoggedIn, async (req, res) => {
-    try {
-      await db.collection('todos').deleteOne(
-        { _id: new ObjectId(req.body.id) }   // ✅ Use "new ObjectId"
-      );
-      res.json('Deleted');
-    } catch (err) {
-      console.error(err);
-      res.status(500).send(err);
-    }
-  });
+    // CREATE a new todo
+    app.post('/todos', (req, res) => {
+        // beginner note: we're saving a new task with "completed: false" by default
+        db.collection('todos').save({ task: req.body.task, completed: false }, (err, result) => {
+            if (err) return console.log(err)
+            console.log('saved new todo to database')
+            res.redirect('/profile')
+        })
+    })
 
-  // Auth Routes ===============================================================
+    // UPDATE - mark todo as completed or toggle it
+    app.put('/todos', (req, res) => {
+        db.collection('todos').findOneAndUpdate(
+            { task: req.body.task }, // look for this exact task
+            {
+                $set: {
+                    completed: req.body.completed === 'false' ? true : false // toggle true/false
+                }
+            },
+            {
+                sort: { _id: -1 },
+                upsert: false
+            },
+            (err, result) => {
+                if (err) return res.send(err)
+                res.send(result)
+            }
+        )
+    })
 
-  // Login
-  app.get('/login', function(req, res) {
-    res.render('login.ejs', { message: req.flash('loginMessage') });
-  });
+    // DELETE a todo
+    app.delete('/todos', (req, res) => {
+        db.collection('todos').findOneAndDelete({ task: req.body.task }, (err, result) => {
+            if (err) return res.send(500, err)
+            res.send('Todo deleted!')
+        })
+    })
 
-  app.post('/login', passport.authenticate('local-login', {
-    successRedirect: '/profile',
-    failureRedirect: '/login',
-    failureFlash: true
-  }));
+// =============================================================================
+// AUTHENTICATE (LOGIN / SIGNUP) ===============================================
+// =============================================================================
 
-  // Signup
-  app.get('/signup', function(req, res) {
-    res.render('signup.ejs', { message: req.flash('signupMessage') });
-  });
+    app.get('/login', function(req, res) {
+        res.render('login.ejs', { message: req.flash('loginMessage') });
+    });
 
-  app.post('/signup', passport.authenticate('local-signup', {
-    successRedirect: '/profile',
-    failureRedirect: '/signup',
-    failureFlash: true
-  }));
+    app.post('/login', passport.authenticate('local-login', {
+        successRedirect: '/profile',
+        failureRedirect: '/login',
+        failureFlash: true
+    }));
 
-  // Unlink Local account
-  app.get('/unlink/local', isLoggedIn, async function(req, res) {
-    try {
-      req.user.local.email = undefined;
-      req.user.local.password = undefined;
-      await req.user.save();
-      res.redirect('/profile');
-    } catch (err) {
-      console.error(err);
-      res.redirect('/profile');
-    }
-  });
+    app.get('/signup', function(req, res) {
+        res.render('signup.ejs', { message: req.flash('signupMessage') });
+    });
+
+    app.post('/signup', passport.authenticate('local-signup', {
+        successRedirect: '/profile',
+        failureRedirect: '/signup',
+        failureFlash: true
+    }));
+
+// =============================================================================
+// UNLINK ACCOUNTS =============================================================
+// =============================================================================
+
+    app.get('/unlink/local', isLoggedIn, function(req, res) {
+        var user = req.user;
+        user.local.email = undefined;
+        user.local.password = undefined;
+        user.save(function(err) {
+            res.redirect('/profile');
+        });
+    });
 
 };
 
-// Middleware to check if user is logged in
+// middleware that checks if you’re logged in
 function isLoggedIn(req, res, next) {
-  if (req.isAuthenticated())
-    return next();
-  res.redirect('/');
+    if (req.isAuthenticated())
+        return next();
+    res.redirect('/');
 }

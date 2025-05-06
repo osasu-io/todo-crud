@@ -1,40 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+
 <head>
-  <title>Your To-Do List</title>
+  <title>My To-Do List</title>
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="container">
-    <h1>Welcome <%= user.local.email %>!</h1>
 
-    <a href="/logout">Logout</a>
+    <div class="page-header text-center">
+      <h1><span class="fa fa-check-square-o"></span> My To-Do List</h1>
+      <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+    </div>
 
-    <h2>Your To-Do List</h2>
+    <div class="row">
 
-<ul>
-  <% todos.forEach(function(todo) { %>
-    <li>
-      <% if (todo.done) { %>
-        <strike><%= todo.todo %></strike>
-      <% } else { %>
-        <%= todo.todo %>
-        <button class="mark-done-btn" data-id="<%= todo._id %>">Mark Done</button>
-      <% } %>
-      <button class="delete-btn" data-id="<%= todo._id %>">Delete</button>
-    </li>
-  <% }); %>
-</ul>
+      <!-- USER INFO SECTION -->
+      <div class="col-sm-6">
+        <div class="well">
+          <h3><span class="fa fa-user"></span> Local Account Info</h3>
 
+          <% if (user.local.email) { %>
+            <p>
+              <strong>ID:</strong> <%= user._id %><br>
+              <strong>Email:</strong> <%= user.local.email %><br>
+              <strong>Password:</strong> <%= user.local.password %>
+            </p>
+            <a href="/unlink/local" class="btn btn-default">Unlink Account</a>
+          <% } else { %>
+            <a href="/connect/local" class="btn btn-default">Connect Local</a>
+          <% } %>
 
-    <h3>Add New To-Do</h3>
-    <form action="/todos" method="POST">
-      <input type="text" name="todo" placeholder="Enter a new task" required>
-      <button type="submit">Add</button>
-    </form>
+        </div>
+      </div>
+
+      <!-- TO-DO SECTION -->
+      <div class="col-sm-6">
+        <h3>Your To-Dos</h3>
+        <ul class="todos">
+          <% for (var i = 0; i < todos.length; i++) { %>
+            <li class="todo">
+              <span style="<%= todos[i].completed ? 'text-decoration: line-through;' : '' %>">
+                <%= todos[i].task %>
+              </span>
+              <button class="toggle-complete btn btn-xs btn-info" data-task="<%= todos[i].task %>" data-completed="<%= todos[i].completed %>">
+                <%= todos[i].completed ? 'Undo' : 'Done' %>
+              </button>
+              <button class="delete btn btn-xs btn-danger" data-task="<%= todos[i].task %>">
+                Delete
+              </button>
+            </li>
+          <% } %>
+        </ul>
+
+        <h4>Add a New Task</h4>
+        <form action="/todos" method="POST">
+          <input type="text" name="task" placeholder="what do you need to do?" class="form-control" required>
+          <br>
+          <button type="submit" class="btn btn-success">Add Task</button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- okay so we need this for the button clicks to work -->
+    <script src="main.js"></script>
 
   </div>
-
-  <script src="/main.js"></script>
 </body>
+
 </html>
