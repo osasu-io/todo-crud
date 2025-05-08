@@ -4,7 +4,7 @@ require('dotenv').config()
 // load all the packages we need
 const express = require('express')
 const app = express()
-const port = process.env.PORT || 8080 // use 8080 unless something else is set
+const port = process.env.PORT || 8080 
 const mongoose = require('mongoose') // this lets us talk to MongoDB in an easier way
 const passport = require('passport') // for login/signup
 const flash = require('connect-flash') // lets us show messages in the UI
@@ -14,8 +14,9 @@ const cookieParser = require('cookie-parser') // lets us read cookies
 const bodyParser = require('body-parser') // lets us grab data from forms
 const session = require('express-session') // keeps users logged in across pages
 
-const configDB = require('./config/database.js') // this has our MongoDB connection info
+const configDB = require('./config/database.js') // MongoDB connection info
 
+// configuration ===============================================================
 // tell mongoose to connect to the MongoDB database
 mongoose.connect(configDB.url, {
   useNewUrlParser: true,        // not sure what this does yet but docs say use it
@@ -38,7 +39,7 @@ app.use(bodyParser.json()) // grab data as JSON (e.g. from fetch requests)
 app.use(bodyParser.urlencoded({ extended: true })) // grab data from forms
 app.use(express.static('public')) // let us use css/js/img files in /public folder
 
-app.set('view engine', 'ejs') // we are using EJS templates
+app.set('view engine', 'ejs') // views EJS templates
 
 // these are for login sessions (keeps users logged in)
 app.use(session({
@@ -50,6 +51,6 @@ app.use(passport.initialize()) // start up passport
 app.use(passport.session()) // make sure sessions and passport work together
 app.use(flash()) // use flash messages to show login/signup errors
 
-
+// launch ======================================================================
 app.listen(port)
-console.log('Connected on port ' + port)
+console.log('The magic happens on port ' + port)

@@ -9,7 +9,7 @@ module.exports = function(app, passport, db) {
 
     // PROFILE SECTION =========================
     app.get('/profile', isLoggedIn, function(req, res) {
-        // okay so this finds all todos in the collection and sends them to the profile.ejs file
+        // finds all todos in the collection and sends them to the profile.ejs file
         db.collection('todos').find().toArray((err, result) => {
             if (err) return console.log(err)
             res.render('profile.ejs', {
@@ -31,7 +31,7 @@ module.exports = function(app, passport, db) {
 
     // CREATE a new todo
     app.post('/todos', (req, res) => {
-        // beginner note: we're saving a new task with "completed: false" by default
+        //saving a new task with "completed: false" by default
         db.collection('todos').save({ task: req.body.task, completed: false }, (err, result) => {
             if (err) return console.log(err)
             console.log('saved new todo to database')
@@ -39,7 +39,7 @@ module.exports = function(app, passport, db) {
         })
     })
 
-    // UPDATE - mark todo as completed or toggle it
+    // UPDATE - mark todo note as completed or toggle it
     app.put('/todos', (req, res) => {
         db.collection('todos').findOneAndUpdate(
             { task: req.body.task }, // look for this exact task
@@ -59,7 +59,7 @@ module.exports = function(app, passport, db) {
         )
     })
 
-    // DELETE a todo
+    // DELETE a todo note
     app.delete('/todos', (req, res) => {
         db.collection('todos').findOneAndDelete({ task: req.body.task }, (err, result) => {
             if (err) return res.send(500, err)
